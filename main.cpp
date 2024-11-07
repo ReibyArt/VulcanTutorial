@@ -1,5 +1,5 @@
 // СЛОИ ВАЛИДАЦИИ ВУЛКАН //
-// Message callback  ???//
+// Message callback //
 
 
 #define GLFW_INCLUDE_VULKAN
@@ -50,9 +50,12 @@ private:
     void createInstance() {
 
         // Проверка слоёв валидации на доступность // 
-        if (enableValidationLayers && !checkValidationLayerSupport()) {
+       /* if (enableValidationLayers && !checkValidationLayerSupport()) {
             throw std::runtime_error("Validation Layers requested, but not avaliable!");
-        }
+        }*/
+
+        
+
 
         VkApplicationInfo appInfo{};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -68,6 +71,11 @@ private:
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         createInfo.pApplicationInfo = &appInfo;
 
+        // Extendions For GLFW
+        auto extensions = getRequiredExtensions();
+        createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+        createInfo.ppEnabledExtensionNames = extensions.data();
+
         // Check if validation layers is enabled
         if (enableValidationLayers) {
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
@@ -77,6 +85,25 @@ private:
         else {
             createInfo.enabledLayerCount = 0;
         }
+
+        VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);       
+
+
+        // Count extensions
+        uint32_t extensionCount = 0;
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+        std::vector<VkExtensionProperties>extensionss(extensionCount);
+
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount,
+            extensionss.data());
+
+        std::cout << "My Extensions -> " << extensionCount << std::endl;
+        std::cout << "Avalilable Extensions: ->\n";
+        for (const auto& extensionsss : extensionss)
+        {
+            std::cout << '\t' << extensionsss.extensionName << '\n';
+        }
+
 
         // Подсчёт расширений загружаемых vulkan
         uint32_t glfwExtensionCount = 0;
@@ -88,21 +115,10 @@ private:
         createInfo.enabledLayerCount = 0;
 
         if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create instance!");           
+            throw std::runtime_error("failed to create instance!");
         }
-
-        VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);       
-
-
-        // Count extensions
-        uint32_t extensionCount = 0;
-        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-        std::vector<VkExtensionProperties> extensions(extensionCount);
-
-        std::cout << "My Extensions -> " << extensionCount << std::endl;
-        std::cout <<"Validation Layers -> "<< enableValidationLayers << std::endl;
-
         
+        std::cout <<"Validation Layers -> "<< enableValidationLayers << std::endl;
     }
 
         // Layers of Support Validation //
@@ -113,7 +129,7 @@ private:
             vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
             return false;
 
-            for (const char* layerName :validationLayers)
+            for (const char* layerName : validationLayers)
             {
                 bool layerFound = false;
                 for (const auto& layerProperties : availableLayers )
@@ -145,8 +161,14 @@ private:
         }
 
 
-
-
+        // Callback Function // 
+        static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+            VkDebugUtilsMessageTypeFlagsEXT messageType,
+            const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+            void* pUserData) {
+            std::cerr << "Validation Layer: " << pCallbackData->pMessage << std::endl;
+            return false;
+        }
 
 
 
@@ -158,12 +180,21 @@ private:
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); //
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); //
-        window = glfwCreateWindow(WIDTH, HEIGHT, "VulcanTutReiby", nullptr, nullptr);
+        window = glfwCreateWindow(WIDTH, HEIGHT, "VulcanReiby", nullptr, nullptr);
     }
     // Инициализация Vulkan
     void initVulkan() {
         std::cout << "Init The Vulkan......" << std::endl;
         createInstance();
+        setupDebugMessenger();
+    }
+
+    void setupDebugMessenger() {
+        std::cout << "DebuggerMessenger in true!\n";
+        if (!enableValidationLayers) {
+        std::cout << "DebuggerMessenger in false!\n";
+            return;
+        }
     }
 
     // Опишем главный цикл
